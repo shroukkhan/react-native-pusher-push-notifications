@@ -1,21 +1,20 @@
 package com.b8ne.RNPusherPushNotifications;
 
-import android.util.Log;
-
 import android.app.Activity;
-
-import java.util.Set;
-
+import android.util.Log;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.firebase.messaging.RemoteMessage;
-
+import com.pusher.pushnotifications.PushNotificationReceivedListener;
 import com.pusher.pushnotifications.PushNotifications;
 import com.pusher.pushnotifications.SubscriptionsChangedListener;
-import com.pusher.pushnotifications.PushNotificationReceivedListener;
+
+import java.util.Map;
+import java.util.Set;
 
 //
 // TODO: verify the android manifest after https://docs.pusher.com/beams/reference/android
+
 /**
  * Created by bensutter on 13/1/17.
  * https://docs.pusher.com/beams/getting-started/android/init-beams
@@ -58,24 +57,34 @@ public class PusherWrapper {
                 // Arguments.createMap seems to be for testing
                 // see: https://github.com/facebook/react-native/blob/master/ReactAndroid/src/main/java/com/facebook/react/bridge/WritableNativeMap.java#L16
                 //WritableMap map = Arguments.createMap();
-                final WritableMap map = new WritableNativeMap();
+
                 RemoteMessage.Notification notification = remoteMessage.getNotification();
 
-                if(notification != null) {
-                    map.putString("body", notification.getBody());
-                    map.putString("title", notification.getTitle());
-                    map.putString("tag", notification.getTag());
-                    map.putString("click_action", notification.getClickAction());
-                    map.putString("icon", notification.getIcon());
-                    map.putString("color", notification.getColor());
-                    //map.putString("link", notification.getLink());
-
-                    context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(notificationEvent, map);
-                    //System.out.print(remoteMessage.toString());
+                if (notification != null) {
+                    final WritableMap dataMap = new WritableNativeMap();
+                    dataMap.putString("body", notification.getBody());
+                    dataMap.putString("title", notification.getTitle());
+                    dataMap.putString("tag", notification.getTag());
+                    dataMap.putString("click_action", notification.getClickAction());
+                    dataMap.putString("icon", notification.getIcon());
+                    dataMap.putString("color", notification.getColor());
+                    context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(notificationEvent, dataMap);
                     Log.d("PUSHER_WRAPPER", "Notification received: " + notification.toString());
-                }
-                else {
-                    Log.d("PUSHER_WRAPPER", "No notification received");
+                } else {
+                    final WritableMap dataMap = new WritableNativeMap();
+                    final WritableMap userInfoMap = new WritableNativeMap();
+                    final WritableMap silentMap = new WritableNativeMap();
+
+                    final Map<String, String> messageData = remoteMessage.getData();
+                    Log.d("PUSHER_WRAPPER", "Silent Notification received" + messageData.toString());
+
+                    dataMap.putString("body", messageData.get("body"));
+                    dataMap.putString("title", messageData.get("title"));
+                    userInfoMap.putMap("data", dataMap);
+                    silentMap.putMap("userInfo", userInfoMap);
+
+                    context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(notificationEvent, silentMap);
+
                 }
             }
         });
@@ -83,20 +92,20 @@ public class PusherWrapper {
     }
 
     public void onDestroy(Activity activity) {
-        Log.i("PUSHER_WRAPPER", "onDestroy: " +getActivityName(activity));
+        Log.i("PUSHER_WRAPPER", "onDestroy: " + getActivityName(activity));
     }
 
     public void onPause(Activity activity) {
-        Log.i("PUSHER_WRAPPER", "onPause: " +getActivityName(activity));
+        Log.i("PUSHER_WRAPPER", "onPause: " + getActivityName(activity));
     }
 
     private String getActivityName(Activity activity) {
         return activity.getClass().getSimpleName();
     }
 
-    public void subscribe(final String interest, final Callback errorCallback,  final Callback successCallback) {
-        Log.d("PUSHER_WRAPPER", "Subscribing to " +  interest);
-        System.out.print("Subscribing to " +  interest);
+    public void subscribe(final String interest, final Callback errorCallback, final Callback successCallback) {
+        Log.d("PUSHER_WRAPPER", "Subscribing to " + interest);
+        System.out.print("Subscribing to " + interest);
         try {
             //this.pushNotifications.subscribe(interest);
             PushNotifications.subscribe(interest);
@@ -111,7 +120,7 @@ public class PusherWrapper {
         }
     }
 
-    public void unsubscribe(final String interest, final Callback errorCallback,  final Callback successCallback) {
+    public void unsubscribe(final String interest, final Callback errorCallback, final Callback successCallback) {
         Log.d("PUSHER_WRAPPER", "Unsubscribing from " + interest);
         System.out.print("Unsubscribing from " + interest);
         try {
@@ -129,7 +138,7 @@ public class PusherWrapper {
         }
     }
 
-    public void unsubscribeAll(final Callback errorCallback,  final Callback successCallback) {
+    public void unsubscribeAll(final Callback errorCallback, final Callback successCallback) {
 
         try {
             PushNotifications.unsubscribeAll();
@@ -146,7 +155,7 @@ public class PusherWrapper {
         }
     }
 
-    public void getSubscriptions( final Callback subscriptionCallback, final Callback errorCallback) {
+    public void getSubscriptions(final Callback subscriptionCallback, final Callback errorCallback) {
         try {
             Set<String> subscriptionSet = PushNotifications.getSubscriptions();
             WritableArray subscriptions = new WritableNativeArray();
@@ -180,5 +189,5 @@ public class PusherWrapper {
     }
 
 
-
 }
+
