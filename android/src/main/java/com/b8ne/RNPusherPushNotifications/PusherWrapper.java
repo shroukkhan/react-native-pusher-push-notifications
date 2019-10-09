@@ -71,19 +71,14 @@ public class PusherWrapper {
                     context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(notificationEvent, dataMap);
                     Log.d("PUSHER_WRAPPER", "Notification received: " + notification.toString());
                 } else {
-                    final WritableMap dataMap = new WritableNativeMap();
-                    final WritableMap userInfoMap = new WritableNativeMap();
-                    final WritableMap silentMap = new WritableNativeMap();
-
                     final Map<String, String> messageData = remoteMessage.getData();
-                    Log.d("PUSHER_WRAPPER", "Silent Notification received" + messageData.toString());
+                    final WritableMap dataMap = new WritableNativeMap();
+                    for (Map.Entry<String, String> entry : messageData.entrySet()) {
+                            dataMap.putString(entry.getKey(), entry.getValue());
+                    }
 
-                    dataMap.putString("body", messageData.get("body"));
-                    dataMap.putString("title", messageData.get("title"));
-                    userInfoMap.putMap("data", dataMap);
-                    silentMap.putMap("userInfo", userInfoMap);
-
-                    context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(notificationEvent, silentMap);
+                    Log.d("PUSHER_WRAPPER", "Silent Notification received" + dataMap.toString());
+                    context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(notificationEvent, dataMap);
 
                 }
             }
